@@ -1,8 +1,123 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
-}
+﻿@model IReadOnlyList<ArbioFlow.Models.PreparationDto>
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="preparation-page">
+
+    <!-- Bannière d'information -->
+    <div class="info-banner">
+        Les factures éditées sur <b>Sage 100cc</b> arrivent ici automatiquement.
+        Le magasinier valide ligne par ligne.
+    </div>
+
+    <!-- Barre de recherche -->
+    <form id="searchForm" method="post" class="toolbar" asp-action="Index">
+        <fieldset id="searchFieldset" style="border:0; padding:0; margin:0;">
+            <span class="tb-title">Factures en préparation</span>
+
+            <input type="text"
+                   name="q"
+                   value="@ViewBag.q"
+                   placeholder="N° facture, client, article…"
+                   style="width:20rem;" />
+
+            <input type="date" name="dateDebut" value="@ViewBag.dateDebut" />
+            <span class="sep">à</span>
+            <input type="date" name="dateFin" value="@ViewBag.dateFin" />
+
+            <button type="submit" id="btnSearch" class="btn btn-primary">
+                <span id="searchSpinner"
+                      class="spinner-border spinner-border-sm d-none"
+                      role="status"
+                      aria-hidden="true"></span>
+                <span id="searchLabel">Rechercher</span>
+            </button>
+        </fieldset>
+
+        <!-- Bouton actualiser -->
+        <a asp-action="Index" class="btn btn-outline">↻</a>
+    </form>
+
+    <!-- Compteur -->
+    <div class="count-line"></div>
+
+    <!-- Tableau -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>N°</th>
+                    <th>Client</th>
+                    <th>Commentaire</th>
+                    <th>Date de commande</th>
+                    <th>Progression</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr class="data-row">
+                            <td><b>@item.DoPiece</b></td>
+                            <td><b>@item.CtIntitule</b></td>
+                            <td></td>
+                            <td>
+                                @(item.DoDate?.ToString(
+                                                        "dd/MM/yyyy",
+                                                        System.Globalization.CultureInfo.InvariantCulture) ?? "-")
+                    </td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                                }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6">Aucune donnée</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<script>
+    const form = document.getElementById('searchForm');
+    const fieldset = document.getElementById('searchFieldset');
+    let enCours = false;
+
+    // Empêcher les doubles clics
+    form.addEventListener('submit', function (e) {
+        if (enCours) {
+            e.preventDefault();
+            return;
+        }
+        enCours = true;
+
+        // Afficher le spinner
+        document.getElementById('searchSpinner').classList.remove('d-none');
+
+        // Modifier le texte du bouton
+        document.getElementById('searchLabel').textContent = 'Recherche en cours...';
+
+        // Désactivation après l'envoi, afin que les valeurs soient bien transmises
+        setTimeout(function () {
+            fieldset.disabled = true;
+        }, 0);
+    });
+
+    // Retour arrière du navigateur
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) {
+            enCours = false;
+            fieldset.disabled = false;
+
+            // Masquer le spinner
+            document.getElementById('searchSpinner').classList.add('d-none');
+
+            // Restaurer le texte
+            document.getElementById('searchLabel').textContent = 'Rechercher';
+        }
+    });
+</script>

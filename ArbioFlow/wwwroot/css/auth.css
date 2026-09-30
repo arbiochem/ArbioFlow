@@ -1,0 +1,218 @@
+﻿:root {
+    --forest: #16302b;
+    --forest-2: #1f4038;
+    --leaf: #4f8a5b;
+    --sand: #e6d3a8;
+    --clay: #b85c38;
+    --clay-dark: #9c4a2b;
+    --ink: #1c2422;
+    --muted: #6f7b77;
+    --line: #dfe5e1;
+    --danger: #b3261e;
+    --serif: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    font-family: var(--sans);
+    color: var(--ink);
+    background: radial-gradient(900px 500px at 15% 10%, var(--forest-2), transparent 70%), var(--forest);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+}
+
+.card {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
+}
+
+.card-top {
+    background: #9c6a3f;
+    padding: 32px 36px;
+    display: flex;
+    justify-content: center;
+}
+
+    .card-top img {
+        max-width: 100%;
+        max-height: 80px;
+        display: block;
+        margin: 8px 12px;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .35));
+    }
+
+.card-body {
+    padding: 32px 32px 28px;
+}
+
+h1 {
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin: 0 0 6px;
+}
+
+.sub {
+    margin: 0 0 24px;
+    color: var(--muted);
+    font-size: .92rem;
+    line-height: 1.45;
+}
+
+label {
+    display: block;
+    font-size: .82rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.field {
+    margin-bottom: 18px;
+}
+
+.control {
+    position: relative;
+}
+
+input[type=text], input[type=password] {
+    width: 100%;
+    height: 44px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: .95rem;
+    color: var(--ink);
+    background: #f6f8f6;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+input::placeholder {
+    color: #a3adaa;
+}
+
+input:focus-visible {
+    outline: 2px solid var(--leaf);
+    outline-offset: 1px;
+    background: #fff;
+}
+
+.control input[type=password], .control input.revealed {
+    padding-right: 84px;
+}
+
+.toggle {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    border: 0;
+    background: none;
+    color: var(--leaf);
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 600;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+    .toggle:hover {
+        background: #eaf1ec;
+    }
+
+    .toggle:focus-visible {
+        outline: 2px solid var(--leaf);
+    }
+
+.error {
+    background: #fdecea;
+    border-left: 3px solid var(--danger);
+    color: var(--danger);
+    font-size: .86rem;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 18px;
+}
+
+.ok {
+    background: #eaf4ec;
+    border-left: 3px solid var(--leaf);
+    color: #2d5a38;
+    font-size: .86rem;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 18px;
+}
+
+.btn {
+    width: 100%;
+    height: 46px;
+    font: inherit;
+    font-weight: 600;
+    font-size: .95rem;
+    color: #fff;
+    background: var(--clay);
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+    .btn:hover {
+        background: var(--clay-dark);
+    }
+
+    .btn:focus-visible {
+        outline: 2px solid var(--sand);
+        outline-offset: 2px;
+    }
+
+.links {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 18px;
+    font-size: .84rem;
+}
+
+    .links a {
+        color: var(--leaf);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+.credit {
+    margin-top: 20px;
+    font-size: .75rem;
+    color: #9fb5ad;
+    text-align: center;
+}
+
+    .credit strong {
+        color: var(--sand);
+        font-weight: 600;
+    }
+
+@media (max-width: 420px) {
+    .card-body {
+        padding: 26px 22px 22px;
+    }
+}

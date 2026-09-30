@@ -1,0 +1,428 @@
+﻿/* =====================================================
+   ARBIOFLOW : feuille de style complète
+   ===================================================== */
+:root {
+    --tan: #b4823f;
+    --tan-deep: #8b5e2a;
+    --tan-soft: #c99a5e;
+    --cream: #fbf5eb;
+    --cream-2: #f5eddd;
+    --ink: #2d2010;
+    --paper: #f8f4ec;
+    --panel: #ffffff;
+    --line: #e5ddcb;
+    --muted: #8a7a63;
+    --red: #b85543;
+    --red-bg: #fbe6e0;
+    --green: #5b7c4e;
+    --green-bg: #e6ede0;
+    --amber: #c9861f;
+    --amber-bg: #faeed6;
+    --grey-bg: #f0ebe0;
+    --grey-text: #a89a80;
+}
+
+/* ============ HEADER / MENU ============ */
+.af-header {
+    background: var(--tan);
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    box-shadow: 0 2px 8px rgba(139,94,42,.15);
+    margin-bottom: 18px;
+}
+
+.af-navbar {
+    padding: 9px 18px;
+}
+
+.af-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: .3px;
+    text-decoration: none;
+    margin-right: 20px;
+}
+
+    .af-brand:hover {
+        color: #fff;
+    }
+
+.af-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #fff;
+    padding: 2px;
+    object-fit: cover;
+}
+
+.af-nav {
+    gap: 1px;
+}
+
+.af-link {
+    display: block;
+    color: #fdf2df;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .15s;
+}
+
+    .af-link:hover {
+        background: rgba(255,255,255,.13);
+        color: #fff;
+    }
+
+    .af-link.active {
+        background: #fff;
+        color: var(--tan-deep);
+    }
+
+.af-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,.15);
+    border-radius: 20px;
+    padding: 5px 12px 5px 5px;
+    color: #fff;
+}
+
+.af-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--tan-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.af-uname {
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.af-toggler {
+    border-color: rgba(255,255,255,.5);
+}
+
+    .af-toggler .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+
+@media (max-width:991.98px) {
+    .af-nav {
+        padding: 8px 0;
+    }
+
+    .af-link {
+        padding: 12px 10px;
+        font-size: 14px;
+        border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+
+    .af-user {
+        margin-top: 8px;
+        align-self: flex-start;
+    }
+}
+
+/* ============ CONTENU ============ */
+
+/* ---- Bandeau info ---- */
+.info-banner {
+    background: var(--cream);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--tan);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--tan-deep);
+    margin-bottom: 14px;
+    line-height: 1.5;
+}
+
+/* ---- Barre d'outils ---- */
+.toolbar {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.tb-title {
+    font-weight: 800;
+    color: var(--tan-deep);
+    font-size: 15px;
+    margin-right: auto;
+}
+
+.toolbar input[type=text],
+.toolbar input[type=date] {
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 8px 11px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--ink);
+}
+
+.toolbar input[type=text] {
+    min-width: 200px;
+    flex: 1;
+    max-width: 340px;
+}
+
+.toolbar input:focus {
+    outline: none;
+    border-color: var(--tan);
+}
+
+.toolbar .sep {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* ---- Boutons ---- */
+.btn {
+    border: none;
+    border-radius: 7px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-tan {
+    background: var(--tan);
+    color: #fff;
+}
+
+    .btn-tan:hover {
+        background: var(--tan-deep);
+        color: #fff;
+    }
+
+.btn-outline {
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink);
+}
+
+    .btn-outline:hover {
+        background: var(--cream);
+        color: var(--ink);
+    }
+
+/* ---- Compteur ---- */
+.count-line {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 6px 0 8px;
+    padding: 0 4px;
+}
+
+    .count-line b {
+        color: var(--tan-deep);
+    }
+
+/* ---- Tableau ---- */
+.table-wrap {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: auto;
+    max-height: calc(100vh - 260px);
+}
+
+    .table-wrap table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        min-width: 700px;
+    }
+
+    .table-wrap th {
+        text-align: left;
+        background: var(--cream);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: var(--tan-deep);
+        padding: 11px 14px;
+        border-bottom: 1.5px solid var(--line);
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+    }
+
+    .table-wrap td {
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--line);
+        white-space: nowrap;
+    }
+
+        .table-wrap td.wrap {
+            white-space: normal;
+            min-width: 220px;
+        }
+
+    .table-wrap tr:last-child td {
+        border-bottom: none;
+    }
+
+tr.data-row {
+    cursor: pointer;
+}
+
+    tr.data-row:hover {
+        background: var(--cream);
+    }
+
+/* ---- Pastilles statut ---- */
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+    .dot.red {
+        background: var(--red);
+    }
+
+    .dot.green {
+        background: var(--green);
+    }
+
+    .dot.amber {
+        background: var(--amber);
+    }
+
+/* ---- Badges ---- */
+.badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-block;
+}
+
+    .badge.red {
+        background: var(--red-bg);
+        color: var(--red);
+    }
+
+    .badge.green {
+        background: var(--green-bg);
+        color: var(--green);
+    }
+
+    .badge.amber {
+        background: var(--amber-bg);
+        color: var(--amber);
+    }
+
+/* ---- Vide ---- */
+.empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 13.5px;
+}
+
+/* ============ FOOTER ============ */
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+.af-header,
+.af-container,
+.af-footer {
+    width: 100%; /* évite le rétrécissement dans le flex */
+}
+
+.preparation-page {
+    padding: 30px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.af-container {
+    flex: 1 0 auto; /* pousse le footer en bas */
+}
+
+.af-footer {
+    flex-shrink: 0;
+    position: relative;
+    bottom: auto;
+    /* remettez ici la couleur de fond du footer */
+    background: #b5813f;
+}
+
+.af-footer-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center; /* au lieu de space-between */
+    flex-wrap: wrap;
+    gap: 18px;
+    text-align: center;
+}
+
+.af-footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: .3px;
+}
+
+.af-footer-text {
+    margin: 0;
+    font-size: 12px;
+    color: #fdf2df;
+    align-items:center;
+}
+
+    .af-footer-text strong {
+        color: #fff;
+    }
+
+@media (max-width:575.98px) {
+    .af-footer-inner {
+        justify-content: center;
+        text-align: center;
+    }
+}

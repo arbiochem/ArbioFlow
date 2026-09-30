@@ -1,5 +1,33 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+
+    // (clé, contrôleur, libellé)
+    var menu = new List<(string Key, string Controller, string Label)>
+    {
+        ("preparation",       "Home",         "Préparation"),
+        ("retour",            "Retours",          "Retour"),
+        ("factures-validees", "FacturesValidees", "Factures validées"),
+        ("reste-a-livrer",    "ResteALivrer",     "Reste à livrer"),
+        ("reservations",      "Reservations",     "Réservations"),
+        ("synthese",          "Synthese",         "Synthèse réservation"),
+        ("transferts",        "Transferts",       "Transferts inter-magasins")
+    };
+}
+
+@{
+    var nomUtilisateur = User.Identity?.IsAuthenticated == true
+        ? (User.Identity.Name ?? "Utilisateur")
+        : "Invité";
+
+    // Initiales pour l'avatar (ex : "Jean Rakoto" -> "JR", "Dépôt" -> "DÉ")
+    var parts = nomUtilisateur.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    var initiales = parts.Length >= 2
+        ? $"{parts[0][0]}{parts[1][0]}"
+        : nomUtilisateur.Length >= 2 ? nomUtilisateur[..2] : nomUtilisateur;
+    initiales = initiales.ToUpper();
+}
+<!DOCTYPE html>
+<html lang="fr">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,40 +35,86 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/ArbioFlow.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/arbioflow.css" asp-append-version="true" />
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+<body class="af-body">
+    <header class="af-header">
+        <nav class="navbar navbar-expand-lg af-navbar">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">ArbioFlow</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <a class="af-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img src="~/img/logo.png" alt="AR" class="af-logo" />
+                    <span>ARBIOFLOW</span>
+                </a>
+
+                <button class="navbar-toggler af-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#mainNavbar" aria-controls="mainNavbar"
+                        aria-expanded="false" aria-label="Menu">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+
+               
+                <div class="navbar-collapse collapse" id="mainNavbar">
+                    <ul class="navbar-nav af-nav me-auto">
+                        @foreach (var m in menu)
+                        {
+                            var active = string.Equals(currentController, m.Controller, StringComparison.OrdinalIgnoreCase);
+                            <li class="nav-item">
+                                <a asp-controller="@m.Controller" asp-action="Index"
+                                   class="af-link @(active ? "active" : "")"
+                                   data-view="@m.Key">@m.Label</a>
+                            </li>
+                        }
                     </ul>
+
+                    <div class="af-user d-flex align-items-center gap-3">
+                        @if (@nomUtilisateur.Contains("admin"))
+                        {
+                            <a asp-controller="Admin" asp-action="Demandes"
+                               class="nav-link af-icon-link"
+                               title="Approbation Mdp" aria-label="Approbation Mdp">
+                                <i class="bi bi-key-fill"></i>
+                            </a>
+
+                            <a asp-controller="Admin" asp-action="Validations"
+                               class="nav-link af-icon-link"
+                               title="Validation user" aria-label="Validation user">
+                                <i class="bi bi-person-check-fill"></i>
+                            </a>
+                        }
+
+
+                        <span class="af-avatar">@initiales</span>
+                        <span class="af-uname">@nomUtilisateur</span>
+
+
+                        <form asp-controller="Home" asp-action="Logout" method="post" class="m-0">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                Déconnexion
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
+
+    <div class="af-container">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - ArbioFlow - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="af-footer">
+        <div class="af-footer-inner">
+            <p class="af-footer-text">
+                Développé par l'équipe <strong>IT Arbiochem</strong>
+                &copy; @DateTime.Now.Year
+            </p>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

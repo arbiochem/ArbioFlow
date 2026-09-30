@@ -1,0 +1,51 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "Inscription";
+}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - ArbioFlow</title>
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+</head>
+<body>
+    <main class="card">
+        <div class="card-top"><img src="~/img/logo.png" alt="Arbiochem Group" /></div>
+        <div class="card-body">
+            <h1>Créer un compte</h1>
+            <p class="sub">Utilisez votre identifiant. Un administrateur validera votre demande.</p>
+
+            @if (!string.IsNullOrEmpty(ViewBag.Erreur as string))
+            {
+                <div class="error" role="alert">@ViewBag.Erreur</div>
+            }
+
+            <form method="post" asp-controller="Home" asp-action="Inscription">
+                <div class="field">
+                    <label for="utilisateur">Identifiant</label>
+                    <input type="text" id="utilisateur" name="utilisateur" value="@ViewBag.utilisateur"
+                           autocomplete="username" autofocus required />
+                </div>
+                <div class="field">
+                    <label for="password">Mot de passe (6 caractères minimum)</label>
+                    <input type="password" id="password" name="password" minlength="6"
+                           autocomplete="new-password" required />
+                </div>
+                <div class="field">
+                    <label for="confirmation">Confirmer le mot de passe</label>
+                    <input type="password" id="confirmation" name="confirmation" minlength="6"
+                           autocomplete="new-password" required />
+                </div>
+                <button type="submit" class="btn">Envoyer la demande</button>
+            </form>
+
+            <div class="links">
+                <a asp-controller="Home" asp-action="Login">← Retour à la connexion</a>
+            </div>
+        </div>
+    </main>
+    <p class="credit">Développé par l'équipe <strong>IT Arbiochem</strong> &copy; @DateTime.Now.Year</p>
+</body>
+</html>

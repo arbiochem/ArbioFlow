@@ -1,0 +1,27 @@
+﻿@model List<ArbioFlow.Models.UtilisateurArbio>
+
+<h4>Validations en attente</h4>
+
+<table class="table">
+    <thead>
+        <tr><th>Login</th><th>Créé le</th><th></th></tr>
+    </thead>
+    <tbody>
+        @foreach (var u in Model)
+        {
+            <tr>
+                <td>@u.Login</td>
+                <td>@u.DateDemande?.ToString("dd/MM/yyyy HH:mm")</td>
+                <td class="d-flex gap-2">
+                    <form asp-action="Valider" asp-route-id="@u.Id" method="post">
+                        <button class="btn btn-success btn-sm">Valider</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr><td colspan="3">Aucune validation en attente.</td></tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,10 @@
+
+
+Date:2026-09-30 10:38:45,017
+Thread:[1]
+Level:ERROR
+Logger:InsertBlazorCode.SyncfusionCodeGeneratorMenuCommand                         [(null)]
+Message:System.ArgumentException: Le chemin d'accès n'a pas une forme conforme.
+   à System.IO.Path.NormalizePath(String path, Boolean fullCheck, Int32 maxPathLength, Boolean expandShortPaths)
+   à System.IO.Path.InternalGetDirectoryName(String path)
+   à InsertBlazorCode.SyncfusionCodeGeneratorMenuCommand.queryStatusMenuCommand_BeforeQueryStatus(Object sender, EventArgs e) dans C:\a\1\repos\vsext_insertblazorcode\SyncfusionBlazorcodegenerator\SyncfusionCodeGeneratorMenuCommand.cs:ligne 386
