@@ -1,0 +1,194 @@
+﻿@model IReadOnlyList<ArbioFlow.Models.LigneFactureDto>
+@using System.Globalization
+
+@{
+    var historique = ViewData["Historique"] as IEnumerable<ArbioFlow.Models.HistoriqueValidationDto>
+                     ?? Enumerable.Empty<ArbioFlow.Models.HistoriqueValidationDto>();
+    var validateur = ViewData["Validateur"] as string ?? "";
+    var noFacture = ViewData["DoPiece"] as string ?? "";
+    var autoDate = DateTime.Now.ToString("dd/MM/yyyy");
+    var autoHeure = DateTime.Now.ToString("HH:mm");
+}
+
+@if (Model == null || Model.Count == 0)
+{
+    <em>Aucune ligne.</em>
+}
+else
+{
+    <div class="af-lignes"
+         data-validateur="@validateur"
+         data-piece="@noFacture">
+
+        <!-- ===== Lignes de la facture ===== -->
+        <div class="af-toolbar">
+            <span class="af-toolbar-info">
+                <strong class="af-compteur">0</strong> / @Model.Count ligne(s) validée(s)
+            </span>
+            <button type="button" class="af-btn-tout-valider">Tout valider</button>
+        </div>
+
+        <table class="table table-sm mb-0 af-table"
+               data-piece="@noFacture"
+               data-url="@Url.Action("ValiderLigne", "Home")">
+            <thead>
+                <tr>
+                    <th>N° Article</th>
+                    <th>Description</th>
+                    <th class="text-end">Qté commandée</th>
+                    <th class="text-end">Qté préparée</th>
+                    <th class="text-end">Reste à livrer</th>
+                    <th class="text-end">Famille</th>
+                    <th class="text-end">Statut</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var l in Model)
+                {
+                    var qte = l.DlQte.ToString(CultureInfo.InvariantCulture);
+                    <tr data-ligne="@l.ArRef" data-design="@l.DlDesign" data-commandee="@qte">
+                        <td>@l.ArRef</td>
+                        <td>@l.DlDesign</td>
+                        <td class="text-end">@l.DlQte</td>
+                        <td class="text-end">
+                            <input type="number"
+                                   class="af-qte-input"
+                                   value="@qte"
+                                   data-original="@qte"
+                                   min="0"
+                                   max="@qte"
+                                   step="any" />
+                        </td>
+                        <td class="text-end af-reste">0</td>
+                        <td class="text-end">@l.FaCodeFamille</td>
+                        <td class="text-end">
+                            <span class="af-statut af-statut-attente">En attente</span>
+                        </td>
+                        <td class="text-end">
+                            <button type="button" class="af-btn-valider">Valider</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- ===== Informations de livraison ===== -->
+        <section class="af-card af-livraison">
+            <h3 class="af-card-title">Informations de livraison</h3>
+            <p class="af-card-sub">
+                Renseignez au fur et à mesure de la préparation — ces informations alimentent
+                automatiquement les exports Excel.
+            </p>
+
+            <div class="af-grid af-grid-4">
+                <div class="af-field">
+                    <label>Type de facture</label>
+                    <select data-field="typeFacture">
+                        <option>Facture directe</option>
+                        <option>Facture sur commande</option>
+                        <option>Facture proforma</option>
+                    </select>
+                </div>
+                <div class="af-field">
+                    <label>Type de retrait</label>
+                    <select data-field="typeRetrait">
+                        <option>A livrer</option>
+                        <option>Retrait client</option>
+                    </select>
+                </div>
+                <div class="af-field">
+                    <label>Véhicule (N° immatriculation)</label>
+                    <input type="text" data-field="vehicule" placeholder="ex : 3475 TBP" />
+                </div>
+                <div class="af-field">
+                    <label>Chauffeur / livreur</label>
+                    <input type="text" data-field="chauffeur" placeholder="Nom du livreur" />
+                </div>
+
+                <div class="af-field">
+                    <label>Date livraison réelle</label>
+                    <input type="date" data-field="dateLivraison" />
+                </div>
+                <div class="af-field">
+                    <label>
+                        Date début préparation
+                        <span class="af-hint">(auto : @autoDate — modifiable)</span>
+                    </label>
+                    <input type="date" data-field="dateDebutPrep" />
+                </div>
+                <div class="af-field">
+                    <label>
+                        Heure début préparation
+                        <span class="af-hint">(auto : @autoHeure)</span>
+                    </label>
+                    <input type="time" data-field="heureDebutPrep" />
+                </div>
+                <div class="af-field">
+                    <label>Statut préparation (manuel)</label>
+                    <select data-field="statutPrep">
+                        <option value="">— Auto (selon validation) —</option>
+                        <option value="EnCours">En cours</option>
+                        <option value="Preparee">Préparée</option>
+                        <option value="Livree">Livrée</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="af-field af-field-full">
+                <label>Cause de non-transfert (si retard ou incident)</label>
+                <select data-field="causeNonTransfert">
+                    <option value="">— Aucune —</option>
+                    <option>Rupture de stock</option>
+                    <option>Retard de transport</option>
+                    <option>Client absent</option>
+                    <option>Autre incident</option>
+                </select>
+            </div>
+
+            <div class="af-field af-field-full">
+                <label>Observations</label>
+                <textarea data-field="observations" rows="3"
+                      placeholder="Notes libres, incidents, précisions…"></textarea>
+            </div>
+        </section>
+
+        <!-- ===== Historique de validation ===== -->
+        <section class="af-card">
+            <h3 class="af-card-title">Historique de validation</h3>
+            <div class="af-histo-wrap">
+                <table class="af-histo">
+                    <thead>
+                        <tr>
+                            <th>N° Facture</th>
+                            <th>Réf article</th>
+                            <th>Heure de validation</th>
+                            <th>Nom validateur</th>
+                            <th>Désignation</th>
+                            <th class="text-end">Qté validée</th>
+                        </tr>
+                    </thead>
+                    <tbody class="af-histo-body">
+                        @foreach (var h in historique)
+                        {
+                            <tr>
+                                <td>@h.DoPiece</td>
+                                <td>@h.ArRef</td>
+                                <td>@h.DateValidation.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@h.Validateur</td>
+                                <td>@h.Designation</td>
+                                <td class="text-end">@h.QteValidee.ToString("0.###", CultureInfo.GetCultureInfo("fr-FR"))</td>
+                            </tr>
+                        }
+                        <tr class="af-histo-vide" style="@(historique.Any() ? "display:none" : "")">
+                            <td colspan="6" class="text-center text-muted">Aucune validation pour le moment.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        @Html.AntiForgeryToken()
+    </div>
+
+}

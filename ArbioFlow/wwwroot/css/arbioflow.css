@@ -374,6 +374,404 @@ body {
     width: 100%;
     box-sizing: border-box;
 }
+
+.af-user .af-icon-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+}
+
+/* ===== Tableau ===== */
+.table td,
+.table th {
+    vertical-align: middle;
+}
+
+    .table td.text-end {
+        font-variant-numeric: tabular-nums; /* chiffres alignés */
+        white-space: nowrap;
+    }
+
+/* ===== Champ quantité ===== */
+.af-qte-input {
+    width: 90px;
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    text-align: right;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    background-color: #fff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+    .af-qte-input:hover {
+        border-color: #86b7fe;
+    }
+
+    .af-qte-input:focus {
+        outline: none;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
+    }
+
+    /* Valeur modifiée (classe ajoutée en JS) */
+    .af-qte-input.modifie {
+        background-color: #fff8e1;
+        border-color: #ffb300;
+    }
+
+    /* Valeur invalide */
+    .af-qte-input.invalide {
+        background-color: #fdecea;
+        border-color: #dc3545;
+    }
+
+    /* Masquer les flèches natives (optionnel) */
+    .af-qte-input::-webkit-outer-spin-button,
+    .af-qte-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .af-qte-input[type=number] {
+        -moz-appearance: textfield;
+    }
+
+/* ===== Bouton Valider ===== */
+.af-btn-valider {
+    padding: 4px 14px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #fff;
+    background-color: #198754;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+    .af-btn-valider:hover {
+        background-color: #157347;
+        box-shadow: 0 2px 6px rgba(25, 135, 84, 0.35);
+    }
+
+    .af-btn-valider:active {
+        transform: scale(0.96);
+    }
+
+    .af-btn-valider:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.35);
+    }
+
+    .af-btn-valider:disabled {
+        background-color: #adb5bd;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
+
+/* ===== Barre d'outils ===== */
+.af-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 4px;
+    margin-bottom: 6px;
+}
+
+.af-toolbar-info {
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+.af-btn-tout-valider {
+    padding: 6px 18px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: #0d6efd;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.af-btn-tout-valider:hover:not(:disabled) {
+    background-color: #0b5ed7;
+    box-shadow: 0 2px 6px rgba(13, 110, 253, 0.35);
+}
+
+/* ===== Cartes ===== */
+.af-card {
+    margin-top: 20px;
+    padding: 20px 24px;
+    background: #fff;
+    border: 1px solid #e6dccb;
+    border-radius: 12px;
+}
+
+.af-card-title {
+    margin: 0 0 4px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #8a5a14;
+}
+
+.af-card-sub {
+    margin: 0 0 16px;
+    font-size: 0.8rem;
+    color: #b0782a;
+}
+
+/* ===== Grille formulaire ===== */
+.af-grid {
+    display: grid;
+    gap: 14px 16px;
+}
+
+.af-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 992px) {
+    .af-grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .af-grid-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.af-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.af-field-full {
+    margin-top: 14px;
+}
+
+.af-field label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #6b5a40;
+}
+
+.af-hint {
+    text-transform: none;
+    font-weight: 400;
+    color: #9a8a70;
+}
+
+.af-field input,
+.af-field select,
+.af-field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 0.92rem;
+    color: #333;
+    background: #fff;
+    border: 1px solid #ddd3c0;
+    border-radius: 8px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.af-field textarea {
+    resize: vertical;
+    min-height: 70px;
+}
+
+    .af-field input:focus,
+    .af-field select:focus,
+    .af-field textarea:focus {
+        outline: none;
+        border-color: #b5802f;
+        box-shadow: 0 0 0 0.2rem rgba(181, 128, 47, 0.2);
+    }
+
+/* ===== Historique ===== */
+.af-histo-wrap {
+    margin-top: 10px;
+    overflow-x: auto;
+    border: 1px solid #e6dccb;
+    border-radius: 10px;
+}
+
+.af-histo {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+    .af-histo th {
+        padding: 10px 14px;
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        text-align: left;
+        color: #8a5a14;
+        background: #faf4ea;
+        white-space: nowrap;
+    }
+
+        .af-histo th.text-end {
+            text-align: right;
+        }
+
+    .af-histo td {
+        padding: 10px 14px;
+        border-top: 1px solid #f0e8d8;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .af-histo tbody tr:hover {
+        background: #fffaf0;
+    }
+
+    .af-histo tr.nouveau {
+        animation: afFlash 1.6s ease;
+    }
+
+@keyframes afFlash {
+    from {
+        background: #d1e7dd;
+    }
+
+    to {
+        background: transparent;
+    }
+}
+
+.af-btn-tout-valider:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.af-btn-tout-valider:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.35);
+}
+
+.af-btn-tout-valider:disabled {
+    background-color: #adb5bd;
+    cursor: not-allowed;
+}
+
+/* Message de résultat */
+.af-toolbar-info .af-message {
+    margin-left: 10px;
+    font-weight: 500;
+}
+
+.af-message.ok {
+    color: #0f5132;
+}
+
+.af-message.erreur {
+    color: #842029;
+}
+
+/* Ligne validée (classe ajoutée en JS après succès) */
+tr.ligne-validee {
+    background-color: #e8f5e9;
+}
+
+.af-btn-valider {
+    background-color: transparent;
+    color: #198754;
+    border: 1px solid #198754;
+    padding: 4px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.af-btn-valider:hover {
+    background-color: #198754;
+    color: #fff;
+}
+
+.depot-info {
+    background-color: transparent;
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.af-user .af-icon-link .af-badge {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    bottom: auto;
+    left: auto;
+    transform: none;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    flex-shrink: 0;
+
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;          /* laisse le badge s'élargir pour 2-3 chiffres */
+    border-radius: 999px;    /* rond parfait pour 1 chiffre, pilule au-delà */
+
+    background-color: #dc3545;
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+    box-shadow: 0 0 0 2px #fff;
+    pointer-events: none;
+}
+
+/* un seul chiffre : cercle parfait */
+.af-user .af-icon-link .af-badge.af-badge--single {
+    width: 20px;
+    padding: 0;
+}
+
+.btn-plus {
+    width: 24px;
+    height: 24px;
+    line-height: 20px;
+    padding: 0;
+    border: 1px solid #b8843f;
+    border-radius: 50%;
+    background: #fff;
+    color: #b8843f;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+    .btn-plus:hover {
+        background: #b8843f;
+        color: #fff;
+    }
+
+.detail-row > td {
+    background: #fbf6ee;
+    padding: .75rem 1rem;
+}
 .af-container {
     flex: 1 0 auto; /* pousse le footer en bas */
 }

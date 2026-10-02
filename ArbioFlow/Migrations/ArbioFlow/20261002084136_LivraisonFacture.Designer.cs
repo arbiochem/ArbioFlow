@@ -4,16 +4,19 @@ using ArbioFlow.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace ArbioFlow.Migrations.Arbio
+namespace ArbioFlow.Migrations.ArbioFlow
 {
     [DbContext(typeof(ArbioDbContext))]
-    partial class ArbioDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261002084136_LivraisonFacture")]
+    partial class LivraisonFacture
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

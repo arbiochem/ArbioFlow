@@ -1,114 +1,65 @@
-﻿using ArbioFlow.Data;
-using ArbioFlow.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+﻿using ArbioFlow.Models;
+using ArbioFlow.Repository;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace ArbioFlow.Services
 {
     public class Authentification : IAuthentification
     {
-        private readonly ArbioDbContext _arbio;
-        private readonly PasswordHasher<UtilisateurArbio> _hasher = new();
-
-        public Authentification(ArbioDbContext arbio)
+        private readonly AuthentificationRepo _auth;  
+        public Authentification(AuthentificationRepo auth)
         {
-            _arbio = arbio;
+            this._auth = auth;
         }
 
-        public async Task<bool> ValiderAsync(string utilisateur, string password)
+        public Task ApprouverAsync(string utilisateur)
         {
-            if (string.IsNullOrWhiteSpace(utilisateur)) return false;
-
-            var u = await _arbio.UtilisateursArbio.FirstOrDefaultAsync(x => x.Login == utilisateur && x.PasswordHash != null);
-            if (u == null || !u.Actif) return false;
-
-            return _hasher.VerifyHashedPassword(u, u.PasswordHash, password)
-                   != PasswordVerificationResult.Failed;
+            return _auth.ApprouverAsync(utilisateur);
         }
 
-
-        public async Task CreerOuMajAsync(string utilisateur, string password)
+        public Task<List<SelectListItem>> ChargerDepots()
         {
-            var u = await _arbio.UtilisateursArbio.FirstOrDefaultAsync(x => x.Login == utilisateur);
-            if (u == null)
-            {
-                u = new UtilisateurArbio { Login = utilisateur };
-                _arbio.UtilisateursArbio.Add(u);
-            }
-            u.PasswordHash = _hasher.HashPassword(u, password);
-            u.Actif = true;
-            u.PendingHash = null;
-            u.DateDemande = null;
-            await _arbio.SaveChangesAsync();
+            return _auth.ChargerDepots();
         }
 
-        public async Task<List<UtilisateurInfo>> ListerAsync()
-            => await _arbio.UtilisateursArbio
-                .OrderBy(u => u.Actif && u.PendingHash == null)
-                .ThenBy(u => u.Login)
-                .Select(u => new UtilisateurInfo(u.Login, u.Actif, u.PendingHash != null, u.DateDemande))
-                .ToListAsync();
-
-
-        public async Task SupprimerAsync(string utilisateur)
+        public Task CreerOuMajAsync(string utilisateur, string password)
         {
-            var u = await _arbio.UtilisateursArbio.FirstOrDefaultAsync(x => x.Login == utilisateur);
-            if (u == null) return;
-            _arbio.UtilisateursArbio.Remove(u);
-            await _arbio.SaveChangesAsync();
+            return _auth.CreerOuMajAsync(utilisateur, password);
         }
 
-        public async Task<string?> DemanderInscriptionAsync(string utilisateur, string password)
+        public Task<string?> DemanderInscriptionAsync(string utilisateur, string password)
         {
-
-            if (await _arbio.UtilisateursArbio.AnyAsync(x => x.Login == utilisateur))
-                return "Un compte ou une demande existe déjà pour cet identifiant.";
-
-            var u = new UtilisateurArbio
-            {
-                Login = utilisateur,
-                Actif = false,
-                DateDemande = DateTime.Now
-            };
-            u.PasswordHash = _hasher.HashPassword(u, password);
-            _arbio.UtilisateursArbio.Add(u);
-            await _arbio.SaveChangesAsync();
-            return null;
+            return _auth.DemanderInscriptionAsync(utilisateur,password);
         }
 
-        public async Task DemanderResetAsync(string utilisateur, string password)
+        public Task DemanderResetAsync(string utilisateur, string password)
         {
-            var u = await _arbio.UtilisateursArbio.FirstOrDefaultAsync(x => x.Login == utilisateur);
-            
-            u.PendingHash = _hasher.HashPassword(u, password);
-            u.DateDemande = DateTime.Now;
-            u.Actif = false;
-            await _arbio.SaveChangesAsync();
+            return _auth.DemanderResetAsync(utilisateur,password);
         }
 
-        public async Task ApprouverAsync(string utilisateur)
+        public Task<List<UtilisateurInfo>> ListerAsync()
         {
-            var u = await _arbio.UtilisateursArbio.FirstOrDefaultAsync(x => x.Login == utilisateur);
-            if (u == null) return;
-
-            if (u.PendingHash != null)
-            {
-                u.PasswordHash = u.PendingHash;
-                u.PendingHash = null;
-            }
-            u.Actif = true;
-            u.DateDemande = null;
-            await _arbio.SaveChangesAsync();
+            return _auth.ListerAsync();
         }
 
-        public async Task RefuserAsync(string utilisateur)
+        public Task<FDepot> recupDepot(int code)
         {
-            var u = await _arbio.UtilisateursArbio.FirstOrDefaultAsync(x => x.Login == utilisateur);
-            if (u == null) return;
+            return _auth.recupDepot(code);
+        }
 
-            if (!u.Actif) _arbio.UtilisateursArbio.Remove(u);
-            else { u.PendingHash = null; u.DateDemande = null; }
-            await _arbio.SaveChangesAsync();
+        public Task RefuserAsync(string utilisateur)
+        {
+            return _auth.RefuserAsync(utilisateur);
+        }
+
+        public Task SupprimerAsync(string utilisateur)
+        {
+            return _auth.SupprimerAsync(utilisateur);
+        }
+
+        public Task<bool> ValiderAsync(string utilisateur, string password)
+        {
+            return _auth.ValiderAsync(utilisateur,password);
         }
     }
 }

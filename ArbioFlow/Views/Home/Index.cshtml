@@ -2,51 +2,41 @@
 
 <div class="preparation-page">
 
-    <!-- Bannière d'information -->
     <div class="info-banner">
         Les factures éditées sur <b>Sage 100cc</b> arrivent ici automatiquement.
         Le magasinier valide ligne par ligne.
     </div>
 
-    <!-- Barre de recherche -->
     <form id="searchForm" method="post" class="toolbar" asp-action="Index">
         <fieldset id="searchFieldset" style="border:0; padding:0; margin:0;">
             <span class="tb-title">Factures en préparation</span>
 
-            <input type="text"
-                   name="q"
-                   value="@ViewBag.q"
-                   placeholder="N° facture, client, article…"
-                   style="width:20rem;" />
+            <input type="text" name="q" value="@ViewBag.q"
+                   placeholder="N° facture, client, article…" style="width:20rem;" />
 
             <input type="date" name="dateDebut" value="@ViewBag.dateDebut" />
             <span class="sep">à</span>
             <input type="date" name="dateFin" value="@ViewBag.dateFin" />
 
             <button type="submit" id="btnSearch" class="btn btn-primary">
-                <span id="searchSpinner"
-                      class="spinner-border spinner-border-sm d-none"
-                      role="status"
-                      aria-hidden="true"></span>
+                <span id="searchSpinner" class="spinner-border spinner-border-sm d-none"
+                      role="status" aria-hidden="true"></span>
                 <span id="searchLabel">Rechercher</span>
             </button>
         </fieldset>
 
-        <!-- Bouton actualiser -->
         <a asp-action="Index" class="btn btn-outline">↻</a>
     </form>
 
-    <!-- Compteur -->
     <div class="count-line"></div>
 
-    <!-- Tableau -->
     <div class="table-wrap">
-        <table>
+        <table id="tableDocs">
             <thead>
                 <tr>
-                    <th>N°</th>
+                    <th></th>
+                    <th>Numéro Pièce</th>
                     <th>Client</th>
-                    <th>Commentaire</th>
                     <th>Date de commande</th>
                     <th>Progression</th>
                     <th>Statut</th>
@@ -58,24 +48,33 @@
                     foreach (var item in Model)
                     {
                         <tr class="data-row">
-                            <td><b>@item.DoPiece</b></td>
-                            <td><b>@item.CtIntitule</b></td>
-                            <td></td>
                             <td>
-                                @(item.DoDate?.ToString(
-                                                        "dd/MM/yyyy",
+                                <button type="button" class="btn-plus"
+                                        data-piece="@item.DoPiece"
+                                        aria-expanded="false"
+                                        title="Afficher les lignes">
+                                    +
+                                </button>
+                            </td>
+                            <td><b>@item.DoPiece</b></td>
+                            <td><b>@item.DoTiers</b> -- @item.CtIntitule</td>
+                            <td>
+                                @(item.DoDate?.ToString("dd/MM/yyyy",
                                                         System.Globalization.CultureInfo.InvariantCulture) ?? "-")
                     </td>
                     <td></td>
                     <td></td>
                 </tr>
+                <tr class="detail-row d-none">
+                    <td colspan="6">
+                        <div class="detail-content">Chargement…</div>
+                    </td>
+                </tr>
                                 }
                 }
                 else
                 {
-                    <tr>
-                        <td colspan="6">Aucune donnée</td>
-                    </tr>
+                    <tr><td colspan="6">Aucune donnée</td></tr>
                 }
             </tbody>
         </table>
@@ -83,41 +82,138 @@
 </div>
 
 <script>
-    const form = document.getElementById('searchForm');
-    const fieldset = document.getElementById('searchFieldset');
-    let enCours = false;
+    (function () {
+        'use strict';
 
-    // Empêcher les doubles clics
-    form.addEventListener('submit', function (e) {
-        if (enCours) {
-            e.preventDefault();
-            return;
+        // =====================================================
+        // 1. Lignes de facture : saisie, statut, validation
+        // =====================================================
+        const num = (v) => parseFloat(String(v).replace(',', '.'));
+
+        function majStatut(tr, statut, texte) {
+            const badge = tr.querySelector('.af-statut');
+            badge.className = 'af-statut af-statut-' + statut;
+            badge.textContent = texte;
         }
-        enCours = true;
 
-        // Afficher le spinner
-        document.getElementById('searchSpinner').classList.remove('d-none');
+        function recalculer(tr) {
+            if (tr.classList.contains('ligne-validee')) return;   // déjà validée : on ne touche plus
 
-        // Modifier le texte du bouton
-        document.getElementById('searchLabel').textContent = 'Recherche en cours...';
+            const input = tr.querySelector('.af-qte-input');
+            if (!input) return;
 
-        // Désactivation après l'envoi, afin que les valeurs soient bien transmises
-        setTimeout(function () {
-            fieldset.disabled = true;
-        }, 0);
-    });
+            const commandee = num(tr.dataset.commandee);
+            const prepare = num(input.value);
+            const valide = input.value !== '' && !isNaN(prepare) && prepare >= 0 && prepare <= commandee;
 
-    // Retour arrière du navigateur
-    window.addEventListener('pageshow', function (e) {
-        if (e.persisted) {
-            enCours = false;
-            fieldset.disabled = false;
+            input.classList.toggle('modifie', input.value !== input.dataset.original);
+            input.classList.toggle('invalide', !valide);
+            tr.querySelector('.af-btn-valider').disabled = !valide;
+            if (!valide) return;
 
-            // Masquer le spinner
-            document.getElementById('searchSpinner').classList.add('d-none');
+            tr.querySelector('.af-reste').textContent =
+                (commandee - prepare).toLocaleString('fr-FR', { maximumFractionDigits: 3 });
 
-            // Restaurer le texte
-            document.getElementById('searchLabel').textContent = 'Rechercher';
+            if (prepare === 0) majStatut(tr, 'attente', 'En attente');
+            else if (prepare < commandee) majStatut(tr, 'partiel', 'Partiel');
+            else majStatut(tr, 'complet', 'Complet');
         }
-    });
+
+        // Délégation : fonctionne avec le partial chargé en AJAX
+        document.addEventListener('input', (e) => {
+            const input = e.target.closest('.af-qte-input');
+            if (input) recalculer(input.closest('tr'));
+        });
+
+        
+        window.AfLignes = {
+            init: (root) => (root || document)
+                .querySelectorAll('.af-table tbody tr').forEach(recalculer)
+        };
+
+        // =====================================================
+        // 2. Formulaire de recherche
+        // =====================================================
+        const form = document.getElementById('searchForm');
+        const fieldset = document.getElementById('searchFieldset');
+        let enCours = false;
+
+        form.addEventListener('submit', function (e) {
+            if (enCours) {
+                e.preventDefault();
+                return;
+            }
+            enCours = true;
+            document.getElementById('searchSpinner').classList.remove('d-none');
+            document.getElementById('searchLabel').textContent = 'Recherche en cours...';
+
+            // Désactivation après l'envoi, pour que les valeurs soient transmises
+            setTimeout(function () { fieldset.disabled = true; }, 0);
+        });
+
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) {
+                enCours = false;
+                fieldset.disabled = false;
+                document.getElementById('searchSpinner').classList.add('d-none');
+                document.getElementById('searchLabel').textContent = 'Rechercher';
+            }
+        });
+
+        // =====================================================
+        // 3. Déplier / replier une facture
+        // =====================================================
+        const tbody = document.querySelector('#tableDocs tbody');
+
+        function masquerAutres(ligneCourante) {
+            tbody.querySelectorAll('tr.data-row').forEach(tr => {
+                if (tr !== ligneCourante) {
+                    tr.classList.add('d-none');
+                    tr.nextElementSibling.classList.add('d-none');
+                }
+            });
+        }
+
+        function toutReafficher() {
+            tbody.querySelectorAll('tr.data-row').forEach(tr => tr.classList.remove('d-none'));
+            tbody.querySelectorAll('tr.detail-row').forEach(tr => tr.classList.add('d-none'));
+        }
+
+        tbody.addEventListener('click', async function (e) {
+            const btn = e.target.closest('.btn-plus');
+            if (!btn) return;
+
+            const ligne = btn.closest('tr');
+            const detailRow = ligne.nextElementSibling;
+            const content = detailRow.querySelector('.detail-content');
+            const ouvert = btn.getAttribute('aria-expanded') === 'true';
+
+            if (ouvert) {                              // replier : tout redevient normal
+                toutReafficher();
+                btn.textContent = '+';
+                btn.setAttribute('aria-expanded', 'false');
+                btn.title = 'Afficher les lignes';
+                return;
+            }
+
+            masquerAutres(ligne);                      // déplier : cacher les autres
+            detailRow.classList.remove('d-none');
+            btn.textContent = '−';
+            btn.setAttribute('aria-expanded', 'true');
+            btn.title = 'Masquer les lignes';
+
+            if (detailRow.dataset.loaded) return;      // déjà chargé
+
+            try {
+                const url = '@Url.Action("Details", "Home")?doPiece=' + encodeURIComponent(btn.dataset.piece);
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(resp.status);
+                content.innerHTML = await resp.text();
+                AfLignes.init(content);
+                detailRow.dataset.loaded = '1';
+            } catch {
+                content.textContent = 'Impossible de charger les détails.';
+            }
+        });
+    })();
 </script>

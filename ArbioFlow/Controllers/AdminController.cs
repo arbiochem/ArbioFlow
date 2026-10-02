@@ -13,6 +13,7 @@ public class AdminController : Controller
             .Where(u => !u.Actif && u.PendingHash != null)
             .OrderBy(u => u.DateDemande)
             .ToListAsync();
+
         return View(demandes);
     }
 
@@ -22,6 +23,7 @@ public class AdminController : Controller
             .Where(u => !u.Actif && u.PendingHash == null)
             .OrderBy(u => u.DateDemande)
             .ToListAsync();
+
         return View(validations);
     }
 

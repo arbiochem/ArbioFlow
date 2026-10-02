@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using ArbioFlow.Models;
+using ArbioFlow.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,8 +24,12 @@ builder.Services.AddDbContext<ArbioDbContext>(options =>
         builder.Configuration.GetConnectionString("ArbioFlow"),
         sql => sql.CommandTimeout(120)));
 
+builder.Services.AddScoped<PreparationRepo>();
+builder.Services.AddScoped<AuthentificationRepo>();
+builder.Services.AddScoped<ValiderLigneRepo>();
 builder.Services.AddScoped<IPreparation, Preparation>();
 builder.Services.AddScoped<IAuthentification, Authentification>();
+builder.Services.AddScoped<IValiderLigne, ValiderLigne>();
 
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

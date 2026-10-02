@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
 using System.Security.Claims;
 
@@ -16,93 +15,139 @@ namespace ArbioFlow.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IPreparation _preparation;
+        private readonly IValiderLigne _validerLigne;
         private readonly IAuthentification _auth;
-        private readonly IConfiguration _cfg;
         private readonly ArbioDbContext _db;
         private readonly IPasswordHasher<UtilisateurArbio> _hasher;
 
-        public HomeController(ILogger<HomeController> logger, IPreparation preparation, IAuthentification auth,ArbioDbContext db, IPasswordHasher<UtilisateurArbio> hasher)
+        public HomeController(
+            ILogger<HomeController> logger,
+            IPreparation preparation,
+            IAuthentification auth,
+            ArbioDbContext db,
+            IValiderLigne validerLigne,
+            IPasswordHasher<UtilisateurArbio> hasher)
         {
             _logger = logger;
             _preparation = preparation;
             _auth = auth;
             _db = db;
             _hasher = hasher;
+            _validerLigne = validerLigne;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Index(DateTime? dateDebut, DateTime? dateFin, String? q)
-        {
-            ViewBag.dateDebut = dateDebut;
-            ViewBag.dateFin = dateFin;
-            ViewBag.q = q;
+        // Dépôt de l'utilisateur connecté, lu depuis le claim (jamais depuis le client)
+        private int DepotCourant =>
+            int.TryParse(User.FindFirst("DeNo")?.Value, out var d) ? d : 0;
 
-            var requete = await _preparation.getPreparation(dateDebut, dateFin, q);
-            return View(requete);
-        }
-
-        [HttpGet]
-        public IActionResult Login()
-        {
-            return View();
-        }
-
+        // ---------- Préparation ----------
         [HttpGet]
         public IActionResult Index()
         {
             return View();
         }
 
-        [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Logout()
+        [HttpPost]
+        public async Task<IActionResult> Index(DateTime? dateDebut, DateTime? dateFin, string? q)
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Login");
+            ViewBag.dateDebut = dateDebut;
+            ViewBag.dateFin = dateFin;
+            ViewBag.q = q;
+
+            var requete = await _preparation.getPreparation(dateDebut, dateFin, q, DepotCourant);
+            return View(requete);
         }
 
-        private static bool MotsDePasseIdentiques(string a, string b)
+        [HttpGet]
+        public async Task<IActionResult> Details(string doPiece)
         {
-            var x = System.Text.Encoding.UTF8.GetBytes(a);
-            var y = System.Text.Encoding.UTF8.GetBytes(b);
-            return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(x, y);
+            var lignes = await _preparation.GetLignesAsync(doPiece);
+
+            ViewData["DoPiece"] = doPiece;
+            ViewData["Validateur"] = User.Identity?.Name ?? "";
+            //ViewData["Historique"] = await _validerLigne.GetHistoriqueAsync(doPiece);
+
+            return PartialView("_LignesFacture", lignes);
         }
-        public IActionResult Privacy()
+
+        // ValiderLigneRequest est défini dans ArbioFlow.Models (Models/ValiderLigneRequest.cs)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ValiderLigne([FromBody] ValiderLigneRequest req)
         {
+            if (req == null
+                || string.IsNullOrWhiteSpace(req.DoPiece)
+                || string.IsNullOrWhiteSpace(req.ArRef))
+                return BadRequest("Données incomplètes.");
+
+            if (req.QtePreparee < 0)
+                return BadRequest("Quantité invalide.");
+
+            var resultat = await _validerLigne.ValiderLigneAsync(
+                req.DoPiece,
+                req.ArRef,
+                req.QtePreparee,
+                req.Designation,
+                User.Identity?.Name ?? "",
+                DepotCourant);
+
+            return resultat.Succes
+                ? Ok(resultat)
+                : BadRequest(resultat.Message);
+        }
+
+        // ---------- Authentification ----------
+        [HttpGet, AllowAnonymous]
+        public async Task<IActionResult> Login()
+        {
+            ViewBag.Depots = await _auth.ChargerDepots();
             return View();
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
-
         [AllowAnonymous, HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(string utilisateur, string password)
+        public async Task<IActionResult> Login(string utilisateur, string password, int depot)
         {
             utilisateur = utilisateur?.Trim() ?? "";
             ViewBag.utilisateur = utilisateur;
+            ViewBag.depot = depot.ToString();   // string : ton <select> compare avec "as string"
+            ViewBag.Depots = await _auth.ChargerDepots();
 
             if (!await _auth.ValiderAsync(utilisateur, password ?? ""))
             {
                 ViewBag.Erreur = "Identifiant ou mot de passe incorrect ou Compte pas encore validé";
                 return View();
             }
-            else
+
+            var dep = await _auth.recupDepot(depot);
+            if (dep == null)
             {
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.Name, utilisateur)
-                };
-
-                var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var principal = new ClaimsPrincipal(identity);
-
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-                return RedirectToAction("Index");
+                ViewBag.Erreur = "Dépôt introuvable";
+                return View();
             }
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, utilisateur),
+                new Claim("DeNo", dep.DeNo.ToString()),
+                new Claim("DeIntitule", dep.DeIntitule ?? "")
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(identity));
+
+            return RedirectToAction(nameof(Index));
         }
 
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction(nameof(Login));
+        }
+
+        // ---------- Gestion des accès ----------
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Enregistrer(string utilisateur, string password)
         {
@@ -155,12 +200,11 @@ namespace ArbioFlow.Controllers
         }
 
         // ---------- Inscription ----------
-        [HttpGet]
-        [AllowAnonymous]
+        [HttpGet, AllowAnonymous]
         public IActionResult Inscription() => View();
 
-        [HttpPost, ValidateAntiForgeryToken,AllowAnonymous]
-        public async Task<IActionResult> Inscription(string utilisateur, string password, string confirmation, InscriptionViewModel model)
+        [HttpPost, ValidateAntiForgeryToken, AllowAnonymous]
+        public async Task<IActionResult> Inscription(string utilisateur, string password, string confirmation)
         {
             utilisateur = utilisateur?.Trim() ?? "";
             ViewBag.utilisateur = utilisateur;
@@ -182,17 +226,6 @@ namespace ArbioFlow.Controllers
                 ViewBag.Erreur = erreur;
                 return View();
             }
-
-            var user = new UtilisateurArbio
-            {
-                Login = model.Login,
-                Actif = false,
-                DateDemande = DateTime.Now
-            };
-            user.PendingHash = _hasher.HashPassword(user, model.MotDePasse);
-
-            _db.UtilisateursArbio.Add(user);
-            await _db.SaveChangesAsync();
 
             TempData["Ok"] = "Demande envoyée. Vous pourrez vous connecter après validation par un administrateur.";
             return RedirectToAction(nameof(Login));
@@ -223,6 +256,14 @@ namespace ArbioFlow.Controllers
 
             TempData["Ok"] = "Si l'identifiant existe, votre demande a été transmise à l'administrateur. Votre ancien mot de passe reste valable jusqu'à validation.";
             return RedirectToAction(nameof(Login));
+        }
+
+        public IActionResult Privacy() => View();
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }
 }

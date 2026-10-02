@@ -4,16 +4,19 @@ using ArbioFlow.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace ArbioFlow.Migrations.Arbio
+namespace ArbioFlow.Migrations.ArbioFlow
 {
     [DbContext(typeof(ArbioDbContext))]
-    partial class ArbioDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261002083801_AjoutHistoriqueValidation")]
+    partial class AjoutHistoriqueValidation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -62,71 +65,6 @@ namespace ArbioFlow.Migrations.Arbio
                     b.HasIndex("DoPiece");
 
                     b.ToTable("HistoriqueValidation", (string)null);
-                });
-
-            modelBuilder.Entity("ArbioFlow.Models.LivraisonFacture", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CauseNonTransfert")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Chauffeur")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("DateDebutPrep")
-                        .HasColumnType("date");
-
-                    b.Property<DateTime?>("DateLivraison")
-                        .HasColumnType("date");
-
-                    b.Property<DateTime>("DateMaj")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DoPiece")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<TimeSpan?>("HeureDebutPrep")
-                        .HasColumnType("time(0)");
-
-                    b.Property<string>("ModifiePar")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Observations")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<string>("StatutPrep")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("TypeFacture")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("TypeRetrait")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Vehicule")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DoPiece")
-                        .IsUnique();
-
-                    b.ToTable("LivraisonFacture", (string)null);
                 });
 
             modelBuilder.Entity("ArbioFlow.Models.UtilisateurArbio", b =>

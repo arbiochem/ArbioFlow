@@ -1,6 +1,7 @@
 ﻿@{
     Layout = null;
     ViewData["Title"] = "Connexion";
+    var depots = ViewBag.Depots as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>();
 }
 <!DOCTYPE html>
 <html lang="fr">
@@ -40,6 +41,17 @@
                                placeholder="Votre mot de passe" autocomplete="current-password" required />
                         <button type="button" class="toggle" id="togglePwd" aria-controls="password" aria-pressed="false">Afficher</button>
                     </div>
+                </div>
+
+                <div class="field">
+                    <label for="depot">Dépôt</label>
+                    <select id="depot" name="depot" required style="font-size: 0.85rem;">
+                        <option value="" disabled selected="@(string.IsNullOrEmpty(ViewBag.depot as string))">-- Sélectionner un dépôt --</option>
+                        @foreach (var d in depots)
+                        {
+                            <option value="@d.Value" selected="@(d.Value == (ViewBag.depot as string))">@d.Text</option>
+                        }
+                    </select>
                 </div>
 
                 <button type="submit" id="btnConnect" class="btn">Se connecter</button>
