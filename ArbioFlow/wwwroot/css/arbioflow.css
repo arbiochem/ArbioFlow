@@ -646,6 +646,55 @@ body {
         animation: afFlash 1.6s ease;
     }
 
+.af-statut {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: .85rem;
+    font-weight: 600;
+}
+
+.af-statut-attente {
+    background: #e9ecef;
+    color: #495057;
+}
+/* gris */
+.af-statut-partiel {
+    background: #fff3cd;
+    color: #664d03;
+}
+/* jaune */
+.af-statut-complet {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+/* vert */
+
+.af-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.af-save-status {
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #198754;
+    opacity: 0;
+    transition: opacity .25s;
+}
+
+    .af-save-status.visible {
+        opacity: 1;
+    }
+
+    .af-save-status.erreur {
+        color: #b00020;
+    }
+
 @keyframes afFlash {
     from {
         background: #d1e7dd;

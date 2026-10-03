@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ArbioFlow.Migrations.ArbioFlow
 {
     /// <inheritdoc />
-    public partial class AjoutHistoriqueValidation : Migration
+    public partial class AjoutHistoriqueValidationDto : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -22,7 +22,8 @@ namespace ArbioFlow.Migrations.ArbioFlow
                     DateValidation = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Validateur = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Designation = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
-                    QteValidee = table.Column<decimal>(type: "decimal(18,3)", precision: 18, scale: 3, nullable: false)
+                    QteValidee = table.Column<decimal>(type: "decimal(18,3)", precision: 18, scale: 3, nullable: false),
+                    Depot = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {

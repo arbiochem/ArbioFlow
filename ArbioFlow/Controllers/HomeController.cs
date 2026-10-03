@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using System.Globalization;
 using System.Security.Claims;
 
 namespace ArbioFlow.Controllers
@@ -63,9 +65,32 @@ namespace ArbioFlow.Controllers
         {
             var lignes = await _preparation.GetLignesAsync(doPiece);
 
+            // Lignes déjà validées pour cette facture et ce dépôt
+            var historique = await _db.HistoriqueValidations
+                .AsNoTracking()
+                .Where(h => h.DoPiece == doPiece && h.Depot == DepotCourant)
+                .OrderByDescending(h => h.DateValidation)
+                .Select(h => new HistoriqueValidationDto
+                {
+                    DoPiece = h.DoPiece,
+                    ArRef = h.ArRef,
+                    DateValidation = h.DateValidation,
+                    Validateur = h.Validateur,
+                    Designation = h.Designation,
+                    QteValidee = h.QteValidee,
+                    Depot = h.Depot
+                })
+                .ToListAsync();
+
+            // Informations de livraison déjà enregistrées (null si aucune)
+            var livraison = await _db.LivraisonFactures
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.DoPiece == doPiece);
+
             ViewData["DoPiece"] = doPiece;
             ViewData["Validateur"] = User.Identity?.Name ?? "";
-            //ViewData["Historique"] = await _validerLigne.GetHistoriqueAsync(doPiece);
+            ViewData["Historique"] = historique;
+            ViewData["Livraison"] = livraison;
 
             return PartialView("_LignesFacture", lignes);
         }
@@ -94,6 +119,89 @@ namespace ArbioFlow.Controllers
             return resultat.Succes
                 ? Ok(resultat)
                 : BadRequest(resultat.Message);
+        }
+
+        // ---------- Informations de livraison (sauvegarde champ par champ) ----------
+        // SauvegarderLivraisonRequest est défini dans ArbioFlow.Models
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SauvegarderLivraison([FromBody] SauvegarderLivraisonRequest req)
+        {
+            if (req == null || string.IsNullOrWhiteSpace(req.DoPiece) || string.IsNullOrWhiteSpace(req.Champ))
+                return BadRequest("Données incomplètes.");
+
+            var valeur = string.IsNullOrWhiteSpace(req.Valeur) ? null : req.Valeur.Trim();
+
+            var liv = await _db.LivraisonFactures.FirstOrDefaultAsync(x => x.DoPiece == req.DoPiece);
+            if (liv == null)
+            {
+                // Mêmes valeurs par défaut que celles affichées dans les listes
+                liv = new LivraisonFacture
+                {
+                    DoPiece = req.DoPiece,
+                    TypeFacture = "Facture directe",
+                    TypeRetrait = "A livrer"
+                };
+                _db.LivraisonFactures.Add(liv);
+            }
+
+            switch (req.Champ)
+            {
+                case "typeFacture":
+                    if (valeur?.Length > 50) return BadRequest("Texte trop long.");
+                    liv.TypeFacture = valeur; break;
+                case "typeRetrait":
+                    if (valeur?.Length > 50) return BadRequest("Texte trop long.");
+                    liv.TypeRetrait = valeur; break;
+                case "vehicule":
+                    if (valeur?.Length > 30) return BadRequest("Immatriculation trop longue (30 max).");
+                    liv.Vehicule = valeur; break;
+                case "chauffeur":
+                    if (valeur?.Length > 100) return BadRequest("Nom trop long (100 max).");
+                    liv.Chauffeur = valeur; break;
+
+                case "dateLivraison":
+                case "dateDebutPrep":
+                    {
+                        DateTime? d = null;
+                        if (valeur != null)
+                        {
+                            if (!DateTime.TryParseExact(valeur, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                                                        DateTimeStyles.None, out var parsed))
+                                return BadRequest("Date invalide.");
+                            d = parsed;
+                        }
+                        if (req.Champ == "dateLivraison") liv.DateLivraison = d;
+                        else liv.DateDebutPrep = d;
+                        break;
+                    }
+
+                case "heureDebutPrep":
+                    {
+                        TimeSpan? t = null;
+                        if (valeur != null)
+                        {
+                            if (!TimeSpan.TryParse(valeur, CultureInfo.InvariantCulture, out var parsed))
+                                return BadRequest("Heure invalide.");
+                            t = parsed;
+                        }
+                        liv.HeureDebutPrep = t;
+                        break;
+                    }
+
+                case "statutPrep": liv.StatutPrep = valeur; break;
+                case "causeNonTransfert": liv.CauseNonTransfert = valeur; break;
+                case "observations": liv.Observations = valeur; break;
+
+                default: return BadRequest("Champ inconnu.");
+            }
+
+            // Qui a modifié, et quand
+            liv.ModifiePar = User.Identity?.Name ?? "";
+            liv.DateMaj = DateTime.Now;
+
+            await _db.SaveChangesAsync();
+            return Ok();
         }
 
         // ---------- Authentification ----------

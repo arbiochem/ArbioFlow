@@ -2,12 +2,40 @@
 @using System.Globalization
 
 @{
-    var historique = ViewData["Historique"] as IEnumerable<ArbioFlow.Models.HistoriqueValidationDto>
-                     ?? Enumerable.Empty<ArbioFlow.Models.HistoriqueValidationDto>();
+    var historique = (ViewData["Historique"] as IEnumerable<ArbioFlow.Models.HistoriqueValidationDto>
+                     ?? Enumerable.Empty<ArbioFlow.Models.HistoriqueValidationDto>()).ToList();
     var validateur = ViewData["Validateur"] as string ?? "";
     var noFacture = ViewData["DoPiece"] as string ?? "";
     var autoDate = DateTime.Now.ToString("dd/MM/yyyy");
     var autoHeure = DateTime.Now.ToString("HH:mm");
+    var fr = CultureInfo.GetCultureInfo("fr-FR");
+    var inv = CultureInfo.InvariantCulture;
+
+    // Informations de livraison déjà enregistrées en base pour cette facture (peut être null)
+    var liv = ViewData["Livraison"] as ArbioFlow.Models.LivraisonFacture;
+
+    // Ajoute la valeur enregistrée si elle ne fait pas partie de la liste par défaut
+    List<string> Opts(string[] defauts, string? saved) =>
+        string.IsNullOrEmpty(saved) || defauts.Contains(saved)
+            ? defauts.ToList()
+            : defauts.Append(saved).ToList();
+
+    var typesFacture = Opts(new[] { "Facture directe", "Facture sur commande", "Facture proforma" }, liv?.TypeFacture);
+    var typesRetrait = Opts(new[] { "A livrer", "Retrait client" }, liv?.TypeRetrait);
+    var causes = Opts(new[] { "Rupture de stock", "Retard de transport", "Client absent", "Autre incident" }, liv?.CauseNonTransfert);
+
+    // Quantité TOTALE déjà livrée par article (cumul de toutes les validations de cette facture)
+    var livreParArticle = historique
+        .GroupBy(h => (h.ArRef ?? "").Trim(), StringComparer.OrdinalIgnoreCase)
+        .ToDictionary(g => g.Key, g => g.Sum(x => x.QteValidee), StringComparer.OrdinalIgnoreCase);
+
+    // Une ligne n'est "validée" que si tout ce qui a été commandé est livré
+    var nbValidees = Model == null ? 0 : Model.Count(l =>
+    {
+        livreParArticle.TryGetValue((l.ArRef ?? "").Trim(), out var liv);
+        var cmd = Convert.ToDecimal(l.DlQte);
+        return liv > 0 && liv >= cmd;
+    });
 }
 
 @if (Model == null || Model.Count == 0)
@@ -23,8 +51,9 @@ else
         <!-- ===== Lignes de la facture ===== -->
         <div class="af-toolbar">
             <span class="af-toolbar-info">
-                <strong class="af-compteur">0</strong> / @Model.Count ligne(s) validée(s)
+                <strong class="af-compteur">@nbValidees</strong> / @Model.Count ligne(s) livrée(s)
             </span>
+            <small style="color:#b00">[contrôle] @historique.Count validation(s) en base pour @noFacture</small>
             <button type="button" class="af-btn-tout-valider">Tout valider</button>
         </div>
 
@@ -46,36 +75,71 @@ else
             <tbody>
                 @foreach (var l in Model)
                 {
-                    var qte = l.DlQte.ToString(CultureInfo.InvariantCulture);
-                    <tr data-ligne="@l.ArRef" data-design="@l.DlDesign" data-commandee="@qte">
+                    var cmd = Convert.ToDecimal(l.DlQte);
+                    livreParArticle.TryGetValue((l.ArRef ?? "").Trim(), out var livre);
+
+                    var resteLigne = Math.Max(cmd - livre, 0m);
+                    var complete = livre > 0 && resteLigne == 0m;      // tout est livré
+                    var partiel = livre > 0 && resteLigne > 0m;        // livré en partie
+
+                    // Quantité proposée : le reste à livrer si déjà partiellement livré, sinon la commande
+                    var qtePrepDef = partiel ? resteLigne : cmd;
+
+                    var cmdStr = cmd.ToString("0.######", inv);
+                    var livreStr = livre.ToString("0.######", inv);
+                    var qtePrep = qtePrepDef.ToString("0.######", inv);
+                    var resteAff = partiel ? resteLigne : 0m;
+
+                    <tr data-ligne="@l.ArRef" data-design="@l.DlDesign"
+                        data-commandee="@cmdStr" data-livre="@livreStr"
+                        class="@(complete ? "ligne-validee" : null)"
+                        data-valide="@(complete ? "1" : null)">
                         <td>@l.ArRef</td>
                         <td>@l.DlDesign</td>
                         <td class="text-end">@l.DlQte</td>
                         <td class="text-end">
                             <input type="number"
                                    class="af-qte-input"
-                                   value="@qte"
-                                   data-original="@qte"
+                                   value="@(complete ? "0" : qtePrep)"
+                                   data-original="@(complete ? "0" : qtePrep)"
                                    min="0"
-                                   max="@qte"
-                                   step="any" />
+                                   max="@(complete ? "0" : qtePrep)"
+                                   step="any"
+                                   disabled="@complete" />
                         </td>
-                        <td class="text-end af-reste">0</td>
+                        <td class="text-end af-reste">@resteAff.ToString("0.###", fr)</td>
                         <td class="text-end">@l.FaCodeFamille</td>
                         <td class="text-end">
-                            <span class="af-statut af-statut-attente">En attente</span>
+                            @if (complete)
+                            {
+                                <span class="af-statut af-statut-complet">Livrée</span>
+                            }
+                            else if (partiel)
+                            {
+                                <span class="af-statut af-statut-partiel">Partiel</span>
+                            }
+                            else
+                            {
+                                <span class="af-statut af-statut-attente">En attente</span>
+                            }
                         </td>
                         <td class="text-end">
-                            <button type="button" class="af-btn-valider">Valider</button>
+                            <button type="button" class="af-btn-valider" disabled="@complete">
+                                @(complete ? "Livrée" : "Valider")
+                            </button>
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
 
-        <!-- ===== Informations de livraison ===== -->
-        <section class="af-card af-livraison">
-            <h3 class="af-card-title">Informations de livraison</h3>
+        <!-- ===== Informations de livraison (sauvegarde automatique) ===== -->
+        <section class="af-card af-livraison"
+                 data-url="@Url.Action("SauvegarderLivraison", "Home")">
+            <div class="af-card-head">
+                <h3 class="af-card-title">Informations de livraison</h3>
+                <span class="af-save-status" role="status" aria-live="polite"></span>
+            </div>
             <p class="af-card-sub">
                 Renseignez au fur et à mesure de la préparation — ces informations alimentent
                 automatiquement les exports Excel.
@@ -85,52 +149,60 @@ else
                 <div class="af-field">
                     <label>Type de facture</label>
                     <select data-field="typeFacture">
-                        <option>Facture directe</option>
-                        <option>Facture sur commande</option>
-                        <option>Facture proforma</option>
+                        @foreach (var o in typesFacture)
+                        {
+                            <option selected="@(o == liv?.TypeFacture)">@o</option>
+                        }
                     </select>
                 </div>
                 <div class="af-field">
                     <label>Type de retrait</label>
                     <select data-field="typeRetrait">
-                        <option>A livrer</option>
-                        <option>Retrait client</option>
+                        @foreach (var o in typesRetrait)
+                        {
+                            <option selected="@(o == liv?.TypeRetrait)">@o</option>
+                        }
                     </select>
                 </div>
                 <div class="af-field">
                     <label>Véhicule (N° immatriculation)</label>
-                    <input type="text" data-field="vehicule" placeholder="ex : 3475 TBP" />
+                    <input type="text" data-field="vehicule" maxlength="30"
+                           value="@liv?.Vehicule" placeholder="ex : 3475 TBP" />
                 </div>
                 <div class="af-field">
                     <label>Chauffeur / livreur</label>
-                    <input type="text" data-field="chauffeur" placeholder="Nom du livreur" />
+                    <input type="text" data-field="chauffeur" maxlength="100"
+                           value="@liv?.Chauffeur" placeholder="Nom du livreur" />
                 </div>
 
                 <div class="af-field">
                     <label>Date livraison réelle</label>
-                    <input type="date" data-field="dateLivraison" />
+                    <input type="date" data-field="dateLivraison"
+                           value="@(liv?.DateLivraison?.ToString("yyyy-MM-dd"))" />
                 </div>
                 <div class="af-field">
                     <label>
                         Date début préparation
                         <span class="af-hint">(auto : @autoDate — modifiable)</span>
                     </label>
-                    <input type="date" data-field="dateDebutPrep" />
+                    <input type="date" data-field="dateDebutPrep"
+                           value="@(liv?.DateDebutPrep?.ToString("yyyy-MM-dd"))" />
                 </div>
                 <div class="af-field">
                     <label>
                         Heure début préparation
                         <span class="af-hint">(auto : @autoHeure)</span>
                     </label>
-                    <input type="time" data-field="heureDebutPrep" />
+                    <input type="time" data-field="heureDebutPrep"
+                           value="@(liv?.HeureDebutPrep?.ToString(@"hh\:mm"))" />
                 </div>
                 <div class="af-field">
                     <label>Statut préparation (manuel)</label>
                     <select data-field="statutPrep">
-                        <option value="">— Auto (selon validation) —</option>
-                        <option value="EnCours">En cours</option>
-                        <option value="Preparee">Préparée</option>
-                        <option value="Livree">Livrée</option>
+                        <option value="" selected="@string.IsNullOrEmpty(liv?.StatutPrep)">— Auto (selon validation) —</option>
+                        <option value="EnCours" selected="@(liv?.StatutPrep == "EnCours")">En cours</option>
+                        <option value="Preparee" selected="@(liv?.StatutPrep == "Preparee")">Préparée</option>
+                        <option value="Livree" selected="@(liv?.StatutPrep == "Livree")">Livrée</option>
                     </select>
                 </div>
             </div>
@@ -138,18 +210,18 @@ else
             <div class="af-field af-field-full">
                 <label>Cause de non-transfert (si retard ou incident)</label>
                 <select data-field="causeNonTransfert">
-                    <option value="">— Aucune —</option>
-                    <option>Rupture de stock</option>
-                    <option>Retard de transport</option>
-                    <option>Client absent</option>
-                    <option>Autre incident</option>
+                    <option value="" selected="@string.IsNullOrEmpty(liv?.CauseNonTransfert)">— Aucune —</option>
+                    @foreach (var o in causes)
+                    {
+                        <option selected="@(o == liv?.CauseNonTransfert)">@o</option>
+                    }
                 </select>
             </div>
 
             <div class="af-field af-field-full">
                 <label>Observations</label>
                 <textarea data-field="observations" rows="3"
-                      placeholder="Notes libres, incidents, précisions…"></textarea>
+                      placeholder="Notes libres, incidents, précisions…">@liv?.Observations</textarea>
             </div>
         </section>
 
@@ -177,7 +249,7 @@ else
                                 <td>@h.DateValidation.ToString("dd/MM/yyyy HH:mm")</td>
                                 <td>@h.Validateur</td>
                                 <td>@h.Designation</td>
-                                <td class="text-end">@h.QteValidee.ToString("0.###", CultureInfo.GetCultureInfo("fr-FR"))</td>
+                                <td class="text-end">@h.QteValidee.ToString("0.###", fr)</td>
                             </tr>
                         }
                         <tr class="af-histo-vide" style="@(historique.Any() ? "display:none" : "")">
@@ -190,5 +262,4 @@ else
 
         @Html.AntiForgeryToken()
     </div>
-
 }

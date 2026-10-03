@@ -9,5 +9,6 @@
         public string Validateur { get; set; } = "";
         public string Designation { get; set; } = "";
         public decimal QteValidee { get; set; }
+        public int Depot { get; set; }
     }
 }

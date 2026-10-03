@@ -10,6 +10,7 @@ public class ArbioDbContext : DbContext
 
     public DbSet<UtilisateurArbio> UtilisateursArbio { get; set; }
     public DbSet<HistoriqueValidationDto> HistoriqueValidations { get; set; }
+    public DbSet<LivraisonFacture> LivraisonFactures => Set<LivraisonFacture>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -29,6 +30,7 @@ public class ArbioDbContext : DbContext
             e.Property(x => x.Designation).HasMaxLength(250).IsRequired();
             e.Property(x => x.Validateur).HasMaxLength(100).IsRequired();
             e.Property(x => x.QteValidee).HasPrecision(18, 3);
+            e.Property(x => x.Depot);
             e.HasIndex(x => x.DoPiece);
         });
 

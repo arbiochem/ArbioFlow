@@ -1,5 +1,79 @@
 ﻿@model IReadOnlyList<ArbioFlow.Models.PreparationDto>
 
+<style>
+    .af-filtre-cache {
+        display: none !important;
+    }
+
+    .af-filtre {
+        display: flex;
+        gap: .35rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        margin: .5rem 0;
+    }
+
+    .af-chip {
+        --c: #b07d3a; /* couleur du bouton */
+        --bg: #f8efe0; /* fond clair (au repos) */
+        border: 1px solid var(--c);
+        background: var(--bg);
+        color: var(--c);
+        border-radius: 999px;
+        padding: .15rem .65rem;
+        font-size: .78rem;
+        font-weight: 600;
+        line-height: 1.4;
+        cursor: pointer;
+        transition: background .15s, color .15s;
+    }
+
+        .af-chip .n {
+            opacity: .8;
+            margin-left: .2rem;
+            font-weight: 500;
+        }
+
+        .af-chip:hover {
+            background: var(--c);
+            color: #fff;
+        }
+
+        .af-chip.actif {
+            background: var(--c);
+            color: #fff;
+        }
+
+        /* Bouton désactivé : pas de données (ou compteur à 0) */
+        .af-chip:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+            background: var(--bg);
+            color: var(--c);
+        }
+
+            .af-chip:disabled:hover {
+                background: var(--bg);
+                color: var(--c);
+            }
+
+        .af-chip[data-filtre="attente"] {
+            --c: #6c757d;
+            --bg: #e9ecef;
+        }
+        /* gris   */
+        .af-chip[data-filtre="partiel"] {
+            --c: #c77d00;
+            --bg: #fff3cd;
+        }
+        /* orange */
+        .af-chip[data-filtre="complet"] {
+            --c: #198754;
+            --bg: #d1e7dd;
+        }
+    /* vert   */
+</style>
+
 <div class="preparation-page">
 
     <div class="info-banner">
@@ -14,9 +88,11 @@
             <input type="text" name="q" value="@ViewBag.q"
                    placeholder="N° facture, client, article…" style="width:20rem;" />
 
-            <input type="date" name="dateDebut" value="@ViewBag.dateDebut" />
+            <input type="date" name="dateDebut"
+                   value="@(((DateTime?)ViewBag.dateDebut)?.ToString("yyyy-MM-dd"))" />
             <span class="sep">à</span>
-            <input type="date" name="dateFin" value="@ViewBag.dateFin" />
+            <input type="date" name="dateFin"
+                   value="@(((DateTime?)ViewBag.dateFin)?.ToString("yyyy-MM-dd"))" />
 
             <button type="submit" id="btnSearch" class="btn btn-primary">
                 <span id="searchSpinner" class="spinner-border spinner-border-sm d-none"
@@ -27,6 +103,15 @@
 
         <a asp-action="Index" class="btn btn-outline">↻</a>
     </form>
+
+    <!-- Filtre par statut (côté navigateur, ne relance pas la recherche).
+         Désactivé par défaut : activé par le JS seulement s'il y a des données. -->
+    <div class="af-filtre" id="filtreStatut" role="group" aria-label="Filtrer par statut">
+        <button type="button" class="af-chip actif" data-filtre="tous" disabled>Toutes <span class="n"></span></button>
+        <button type="button" class="af-chip" data-filtre="attente" disabled>En attente <span class="n"></span></button>
+        <button type="button" class="af-chip" data-filtre="partiel" disabled>En cours <span class="n"></span></button>
+        <button type="button" class="af-chip" data-filtre="complet" disabled>Préparées <span class="n"></span></button>
+    </div>
 
     <div class="count-line"></div>
 
@@ -47,7 +132,11 @@
                 {
                     foreach (var item in Model)
                     {
-                        <tr class="data-row">
+                        var complet = item.NbLignesTotal > 0 && item.NbLignesValidees >= item.NbLignesTotal;
+                        var statutCss = complet ? "complet" : item.NbLignesValidees > 0 ? "partiel" : "attente";
+                        var statutTxt = complet ? "Préparée" : item.NbLignesValidees > 0 ? "En cours" : "En attente";
+
+                        <tr class="data-row @(complet ? "facture-complete" : "")" data-statut="@statutCss">
                             <td>
                                 <button type="button" class="btn-plus"
                                         data-piece="@item.DoPiece"
@@ -62,8 +151,10 @@
                                 @(item.DoDate?.ToString("dd/MM/yyyy",
                                                         System.Globalization.CultureInfo.InvariantCulture) ?? "-")
                     </td>
-                    <td></td>
-                    <td></td>
+                    <td>@item.LignesValidees</td>
+                    <td>
+                        <span class="af-statut af-statut-@statutCss">@statutTxt</span>
+                    </td>
                 </tr>
                 <tr class="detail-row d-none">
                     <td colspan="6">
@@ -86,7 +177,7 @@
         'use strict';
 
         // =====================================================
-        // 1. Lignes de facture : saisie, statut, validation
+        // 1. Lignes de facture : saisie et statut
         // =====================================================
         const num = (v) => parseFloat(String(v).replace(',', '.'));
 
@@ -96,28 +187,37 @@
             badge.textContent = texte;
         }
 
-        function recalculer(tr) {
-            if (tr.classList.contains('ligne-validee')) return;   // déjà validée : on ne touche plus
+            function recalculer(tr) {
+        if (tr.classList.contains('ligne-validee')) return;   // entièrement livrée : on ne touche plus
 
-            const input = tr.querySelector('.af-qte-input');
-            if (!input) return;
+        const input = tr.querySelector('.af-qte-input');
+        if (!input) return;
 
-            const commandee = num(tr.dataset.commandee);
-            const prepare = num(input.value);
-            const valide = input.value !== '' && !isNaN(prepare) && prepare >= 0 && prepare <= commandee;
+        const arrondi = (x) => Math.round(x * 1000) / 1000;
+        const commandee = num(tr.dataset.commandee);
+        const livre = num(tr.dataset.livre || 0) || 0;
+        const resteAvant = arrondi(commandee - livre);
+        const prepare = num(input.value);
 
-            input.classList.toggle('modifie', input.value !== input.dataset.original);
-            input.classList.toggle('invalide', !valide);
-            tr.querySelector('.af-btn-valider').disabled = !valide;
-            if (!valide) return;
+        const valide = input.value !== '' && !isNaN(prepare) && prepare >= 0 && prepare <= resteAvant;
 
-            tr.querySelector('.af-reste').textContent =
-                (commandee - prepare).toLocaleString('fr-FR', { maximumFractionDigits: 3 });
+        input.classList.toggle('modifie', input.value !== input.dataset.original);
+        input.classList.toggle('invalide', !valide);
+        tr.querySelector('.af-btn-valider').disabled = !(valide && prepare > 0);
+        if (!valide) return;
 
-            if (prepare === 0) majStatut(tr, 'attente', 'En attente');
-            else if (prepare < commandee) majStatut(tr, 'partiel', 'Partiel');
-            else majStatut(tr, 'complet', 'Complet');
-        }
+        // Ligne déjà partiellement livrée et quantité non touchée : on affiche l'état réel
+        const intact = livre > 0 && input.value === input.dataset.original;
+        const resteAffiche = intact ? resteAvant : arrondi(resteAvant - prepare);
+        const total = arrondi(livre + prepare);
+
+        tr.querySelector('.af-reste').textContent =
+            resteAffiche.toLocaleString('fr-FR', { maximumFractionDigits: 3 });
+
+        if (total <= 0) majStatut(tr, 'attente', 'En attente');
+        else if (intact || total < commandee) majStatut(tr, 'partiel', 'Partiel');
+        else majStatut(tr, 'complet', 'Complet');
+    }
 
         // Délégation : fonctionne avec le partial chargé en AJAX
         document.addEventListener('input', (e) => {
@@ -125,7 +225,6 @@
             if (input) recalculer(input.closest('tr'));
         });
 
-        
         window.AfLignes = {
             init: (root) => (root || document)
                 .querySelectorAll('.af-table tbody tr').forEach(recalculer)
@@ -161,10 +260,107 @@
         });
 
         // =====================================================
-        // 3. Déplier / replier une facture
+        // 3. Filtre par statut (Toutes / En attente / En cours / Préparées)
+        //    - boutons désactivés s'il n'y a aucune donnée
+        //    - bouton désactivé si son compteur vaut 0
         // =====================================================
         const tbody = document.querySelector('#tableDocs tbody');
+        const filtreBox = document.getElementById('filtreStatut');
+        const compteLigne = document.querySelector('.count-line');
 
+        let filtreCourant = 'tous';
+        try { filtreCourant = sessionStorage.getItem('af-filtre-statut') || 'tous'; } catch { }
+
+        function appliquerFiltre() {
+            const n = { tous: 0, attente: 0, partiel: 0, complet: 0 };
+            let visibles = 0;
+
+            // 1) Compter d'abord (sans masquer), pour pouvoir corriger le filtre courant
+            tbody.querySelectorAll('tr.data-row').forEach(function (tr) {
+                const st = tr.dataset.statut;
+                n.tous++;
+                if (n[st] !== undefined) n[st]++;
+            });
+
+            // 2) Si le filtre mémorisé n'a plus de données, retour à "tous"
+            if (filtreCourant !== 'tous' && n[filtreCourant] === 0) {
+                filtreCourant = 'tous';
+                try { sessionStorage.setItem('af-filtre-statut', 'tous'); } catch { }
+            }
+
+            // 3) Afficher / masquer les lignes
+            tbody.querySelectorAll('tr.data-row').forEach(function (tr) {
+                const st = tr.dataset.statut;
+
+                // une facture dépliée reste toujours visible (on est en train de la traiter)
+                const ouvert = tr.querySelector('.btn-plus')?.getAttribute('aria-expanded') === 'true';
+                const visible = filtreCourant === 'tous' || st === filtreCourant || ouvert;
+
+                tr.classList.toggle('af-filtre-cache', !visible);
+                tr.nextElementSibling?.classList.toggle('af-filtre-cache', !visible);
+                if (visible) visibles++;
+            });
+
+            // 4) Activer / désactiver les boutons selon les compteurs
+            filtreBox.querySelectorAll('.af-chip').forEach(function (b) {
+                const f = b.dataset.filtre;
+                b.classList.toggle('actif', f === filtreCourant);
+                b.querySelector('.n').textContent = n.tous === 0 ? '' : '(' + n[f] + ')';
+                b.disabled = n.tous === 0 || n[f] === 0;
+            });
+
+            compteLigne.textContent = n.tous === 0
+                ? ''
+                : visibles + ' facture(s) affichée(s) sur ' + n.tous;
+        }
+
+        filtreBox.addEventListener('click', function (e) {
+            const b = e.target.closest('.af-chip');
+            if (!b || b.disabled) return;
+            filtreCourant = b.dataset.filtre;
+            try { sessionStorage.setItem('af-filtre-statut', filtreCourant); } catch { }
+            appliquerFiltre();
+        });
+
+        appliquerFiltre();
+
+        // =====================================================
+        // 4. Mise à jour de la liste (Progression + Statut), sans recharger la page
+        // =====================================================
+        async function actualiserListe() {
+            try {
+                const resp = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    cache: 'no-store'
+                });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+                const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
+
+                doc.querySelectorAll('#tableDocs tr.data-row').forEach(function (nouvelle) {
+                    const piece = nouvelle.querySelector('.btn-plus')?.dataset.piece;
+                    const actuelle = Array.from(tbody.querySelectorAll('tr.data-row'))
+                        .find(tr => tr.querySelector('.btn-plus')?.dataset.piece === piece);
+                    if (!actuelle) return;
+
+                    actuelle.cells[4].innerHTML = nouvelle.cells[4].innerHTML;
+                    actuelle.cells[5].innerHTML = nouvelle.cells[5].innerHTML;
+                    actuelle.dataset.statut = nouvelle.dataset.statut;
+                    actuelle.classList.toggle('facture-complete',
+                        nouvelle.classList.contains('facture-complete'));
+                });
+
+                appliquerFiltre();   // les compteurs, l'activation des boutons et l'affichage suivent le nouveau statut
+            } catch (err) {
+                console.error('[AF] Liste non actualisée :', err);
+            }
+        }
+        window.afActualiserListe = actualiserListe;   // appelée par arbioflow-validation.js
+
+        // =====================================================
+        // 5. Déplier / replier une facture
+        // =====================================================
         function masquerAutres(ligneCourante) {
             tbody.querySelectorAll('tr.data-row').forEach(tr => {
                 if (tr !== ligneCourante) {
@@ -193,6 +389,8 @@
                 btn.textContent = '+';
                 btn.setAttribute('aria-expanded', 'false');
                 btn.title = 'Afficher les lignes';
+                appliquerFiltre();
+                actualiserListe();                     // met à jour 0/4 -> 4/4, statut, couleur
                 return;
             }
 

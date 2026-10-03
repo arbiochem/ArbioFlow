@@ -38,6 +38,9 @@ namespace ArbioFlow.Migrations.Arbio
                     b.Property<DateTime>("DateValidation")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("Depot")
+                        .HasColumnType("int");
+
                     b.Property<string>("Designation")
                         .IsRequired()
                         .HasMaxLength(250)

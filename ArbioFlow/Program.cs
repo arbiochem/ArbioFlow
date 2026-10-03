@@ -17,12 +17,20 @@ builder.Services.AddScoped<IPasswordHasher<UtilisateurArbio>, PasswordHasher<Uti
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("sage"),
-        sql => sql.CommandTimeout(120)));
+        sql =>
+        {
+            sql.CommandTimeout(120);
+            sql.UseCompatibilityLevel(120);
+        }));
 
 builder.Services.AddDbContext<ArbioDbContext>(options =>
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("ArbioFlow"),
-        sql => sql.CommandTimeout(120)));
+        builder.Configuration.GetConnectionString("ArbioFlow"),   // votre nom actuel
+        sql =>
+        {
+            sql.CommandTimeout(120);
+            sql.UseCompatibilityLevel(120);
+        }));
 
 builder.Services.AddScoped<PreparationRepo>();
 builder.Services.AddScoped<AuthentificationRepo>();

@@ -23,7 +23,8 @@ namespace ArbioFlow.Repository
                 QteValidee = qtePreparee,
                 Designation=designation,
                 Validateur = validateur,
-                DateValidation = maintenant
+                DateValidation = maintenant,
+                Depot = depot
             });
 
             var n = await _context.SaveChangesAsync();

@@ -8,5 +8,10 @@
         public string? CtIntitule { get; set; }
         public decimal? DoTotalHt { get; set; }
         public decimal? DoTotalTtc { get; set; }
+
+        public int NbLignesValidees { get; set; }
+        public int NbLignesTotal { get; set; }
+
+        public string LignesValidees => $"{NbLignesValidees}/{NbLignesTotal} Lignes validées";
     }
 }
